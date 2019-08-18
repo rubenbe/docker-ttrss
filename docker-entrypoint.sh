@@ -136,7 +136,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 
 	# only touch "wp-config.php" if we have environment-supplied configuration values
 	if [ "$haveConfig" ]; then
-		: "${TTRSS_DB_TYPE:=pgsql}"
+		: "${TTRSS_DB_TYPE:=mysql}"
 		: "${TTRSS_DB_HOST:=mysql}"
 		: "${TTRSS_DB_USER:=root}"
 		: "${TTRSS_DB_PASSWORD:=}"
