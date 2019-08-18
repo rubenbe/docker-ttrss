@@ -202,7 +202,7 @@ EOPHP
 				start="^(\s*)$(sed_escape_lhs "$key")\s*="
 				end=";"
 			fi
-			sed -ri -e "s/($start\s*).*($end)$/\1$(sed_escape_rhs "$(php_escape "$value" "$var_type")")\3/" wp-config.php
+			sed -ri -e "s/($start\s*).*($end)$/\1$(sed_escape_rhs "$(php_escape "$value" "$var_type")")\3/" config.php
 		}
 
 		set_config 'DB_TYPE' "$TTRSS_DB_TYPE"
@@ -219,7 +219,7 @@ EOPHP
 				set_config "$unique" "${!uniqVar}"
 			else
 				# if not specified, let's generate a random value
-				currentVal="$(sed -rn -e "s/define\(\s*(([\'\"])$unique\2\s*,\s*)(['\"])(.*)\3\s*\);/\4/p" wp-config.php)"
+				currentVal="$(sed -rn -e "s/define\(\s*(([\'\"])$unique\2\s*,\s*)(['\"])(.*)\3\s*\);/\4/p" config.php)"
 				if [ "$currentVal" = 'put your unique phrase here' ]; then
 					set_config "$unique" "$(head -c1m /dev/urandom | sha1sum | cut -d' ' -f1)"
 				fi
