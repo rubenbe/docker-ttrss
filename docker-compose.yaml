@@ -1,0 +1,24 @@
+version: "2.2"
+services:
+    ttrss_fpm:
+        build: .
+        restart: always
+        links:
+        - database:database
+        environment:
+        - TTRSS_DB_TYPE=mysql
+        - TTRSS_DB_HOST=database
+        - TTRSS_DB_USER=root
+        - TTRSS_DB_PASSWORD=changeme
+        - TTRSS_DB_NAME=ttrss_demo
+    database:
+        image: mysql:8.0.17
+        restart: always
+        environment:
+            - MYSQL_ROOT_PASSWORD=changeme
+        command:
+            ["mysqld", "--skip-name-resolve"]
+        volumes:
+            - ./oldauth.cnf:/etc/mysql/conf.d/oldauth.cnf:ro,Z
+
+
