@@ -51,14 +51,14 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 			chown "$user:$group" .
 		fi
 
-		echo >&2 "WordPress not found in $PWD - copying now..."
+		echo >&2 "TT-RSS not found in $PWD - copying now..."
 		if [ -n "$(ls -A)" ]; then
 			echo >&2 "WARNING: $PWD is not empty! (copying anyhow)"
 		fi
 		sourceTarArgs=(
 			--create
 			--file -
-			--directory /usr/src/wordpress
+			--directory /usr/src/ttrss
 			--owner "$user" --group "$group"
 		)
 		targetTarArgs=(
@@ -70,7 +70,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 			targetTarArgs+=( --no-overwrite-dir )
 		fi
 		tar "${sourceTarArgs[@]}" . | tar "${targetTarArgs[@]}"
-		echo >&2 "Complete! WordPress has been successfully copied to $PWD"
+		echo >&2 "Complete! TT-RSS has been successfully copied to $PWD"
 		if [ ! -e .htaccess ]; then
 			# NOTE: The "Indexes" option is disabled in the php:apache base image
 			cat > .htaccess <<-'EOF'
@@ -136,19 +136,20 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 
 	# only touch "wp-config.php" if we have environment-supplied configuration values
 	if [ "$haveConfig" ]; then
+		: "${TTRSS_DB_TYPE:=pgsql}"
 		: "${TTRSS_DB_HOST:=mysql}"
 		: "${TTRSS_DB_USER:=root}"
 		: "${TTRSS_DB_PASSWORD:=}"
-		: "${TTRSS_DB_NAME:=wordpress}"
+		: "${TTRSS_DB_NAME:=ttrss}"
 		: "${TTRSS_DB_CHARSET:=utf8}"
 		: "${TTRSS_DB_COLLATE:=}"
 
 		# version 4.4.1 decided to switch to windows line endings, that breaks our seds and awks
 		# https://github.com/docker-library/wordpress/issues/116
 		# https://github.com/WordPress/WordPress/commit/1acedc542fba2482bab88ec70d4bea4b997a92e4
-		sed -ri -e 's/\r$//' wp-config*
+		sed -ri -e 's/\r$//' config*
 
-		if [ ! -e wp-config.php ]; then
+		if [ ! -e config.php ]; then
 			awk '
 				/^\/\*.*stop editing.*\*\/$/ && c == 0 {
 					c = 1
@@ -159,7 +160,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 					}
 				}
 				{ print }
-			' wp-config-sample.php > wp-config.php <<'EOPHP'
+			' config.php-dist > config.php <<'EOPHP'
 // If we're behind a proxy server and using HTTPS, we need to alert Wordpress of that fact
 // see also http://codex.wordpress.org/Administration_Over_SSL#Using_a_Reverse_Proxy
 if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
@@ -167,12 +168,12 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROT
 }
 
 EOPHP
-			chown "$user:$group" wp-config.php
-		elif [ -e wp-config.php ] && [ -n "$TTRSS_CONFIG_EXTRA" ] && [[ "$(< wp-config.php)" != *"$TTRSS_CONFIG_EXTRA"* ]]; then
+			chown "$user:$group" config.php
+		elif [ -e config.php ] && [ -n "$TTRSS_CONFIG_EXTRA" ] && [[ "$(< config.php)" != *"$TTRSS_CONFIG_EXTRA"* ]]; then
 			# (if the config file already contains the requested PHP code, don't print a warning)
 			echo >&2
-			echo >&2 'WARNING: environment variable "TTRSS_CONFIG_EXTRA" is set, but "wp-config.php" already exists'
-			echo >&2 '  The contents of this variable will _not_ be inserted into the existing "wp-config.php" file.'
+			echo >&2 'WARNING: environment variable "TTRSS_CONFIG_EXTRA" is set, but "config.php" already exists'
+			echo >&2 '  The contents of this variable will _not_ be inserted into the existing "config.php" file.'
 			echo >&2 '  (see https://github.com/docker-library/wordpress/issues/333 for more details)'
 			echo >&2
 		fi
@@ -204,6 +205,7 @@ EOPHP
 			sed -ri -e "s/($start\s*).*($end)$/\1$(sed_escape_rhs "$(php_escape "$value" "$var_type")")\3/" wp-config.php
 		}
 
+		set_config 'DB_TYPE' "$TTRSS_DB_TYPE"
 		set_config 'DB_HOST' "$TTRSS_DB_HOST"
 		set_config 'DB_USER' "$TTRSS_DB_USER"
 		set_config 'DB_PASSWORD' "$TTRSS_DB_PASSWORD"

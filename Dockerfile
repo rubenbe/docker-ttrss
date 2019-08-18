@@ -1,5 +1,12 @@
 FROM php:7.1-fpm-alpine
 
+# docker-entrypoint.sh dependencies
+RUN apk add --no-cache \
+# in theory, docker-entrypoint.sh is POSIX-compliant, but priority is a working, consistent image
+		bash \
+# BusyBox sed is not sufficient for some of our sed expressions
+		sed
+
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
 RUN { \
@@ -36,4 +43,10 @@ RUN set -ex; \
 # upstream tarballs include ./tt-rss/ so this gives us /usr/src/tt-rss
 	tar -xzf ttrss.tar.gz -C /usr/src/; \
 	rm ttrss.tar.gz; \
-	chown -R www-data:www-data /usr/src/tt-rss
+	mv /usr/src/tt-rss /usr/src/ttrss; \
+	chown -R www-data:www-data /usr/src/ttrss
+
+COPY docker-entrypoint.sh /usr/local/bin/
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["php-fpm"]
