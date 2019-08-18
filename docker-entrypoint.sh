@@ -251,7 +251,7 @@ function dbcheck($dsn, $user, $pass, $stderr)
         return true;
     }
     catch (PDOException $e) {
-        fwrite($stderr, "\n" . 'Database Connection Error: ' . $e . "\n");
+				fwrite($stderr, "\n" . 'Database Connection Error: (' . $dsn . '): ' . $e . "\n");
         return false;
     }
 }
