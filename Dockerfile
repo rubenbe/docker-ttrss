@@ -10,12 +10,17 @@ RUN apk add --no-cache \
 # install the PHP extensions we need (https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions)
 RUN set -ex; \
 	\
+	apk add --no-cache --virtual .build-deps \
+		postgresql-dev \
+	; \
+	\
 	docker-php-ext-install -j "$(nproc)" \
 		pdo \
 		pdo_mysql \
+		pdo_pgsql \
 		opcache \
 	; \
-	docker-php-ext-enable pdo_mysql; \
+	docker-php-ext-enable pdo_mysql pdo_pgsql; \
 	\
 	runDeps="$( \
 		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
@@ -23,7 +28,8 @@ RUN set -ex; \
 			| sort -u \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 	)"; \
-	apk add --virtual .wordpress-phpexts-rundeps $runDeps;
+	apk add --virtual .wordpress-phpexts-rundeps $runDeps; \
+	apk del .build-deps
 
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
