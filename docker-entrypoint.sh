@@ -236,6 +236,25 @@ EOPHP
 
 		if ! TERM=dumb php -- <<'EOPHP'
 <?php
+
+function dbconnect($dsn, $user, $pass)
+{
+    $pdo = new PDO($dsn, $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    return $pdo;
+}
+
+function dbcheck($dsn, $user, $pass, $stderr)
+{
+    try {
+        dbconnect($dsn, $user, $pass);
+        return true;
+    }
+    catch (PDOException $e) {
+        fwrite($stderr, "\n" . 'Database Connection Error: ' . $e . "\n");
+        return false;
+    }
+}
 // database might not exist, so let's try creating it (just to be safe)
 
 $stderr = fopen('php://stderr', 'w');
@@ -253,19 +272,19 @@ if (is_numeric($socket)) {
 $user = getenv('TTRSS_DB_USER');
 $pass = getenv('TTRSS_DB_PASSWORD');
 $dbName = getenv('TTRSS_DB_NAME');
+$dbType = getenv('TTRSS_DB_TYPE');
+$dsn = $dbType . ":host=" . getenv('TTRSS_DB_HOST') . ";dbname=" . $dbName;
 
 $maxTries = 10;
-do {
-	$mysql = new mysqli($host, $user, $pass, '', $port, $socket);
-	if ($mysql->connect_error) {
-		fwrite($stderr, "\n" . 'MySQL Connection Error: (' . $mysql->connect_errno . ') ' . $mysql->connect_error . "\n");
-		--$maxTries;
-		if ($maxTries <= 0) {
-			exit(1);
-		}
-		sleep(3);
+while (!dbcheck($dsn, $user, $pass, $stderr)){
+	--$maxTries;
+	if ($maxTries <= 0) {
+		exit(1);
 	}
-} while ($mysql->connect_error);
+	sleep(3);
+}
+
+$mysql = dbconnect($dsn, $user, $pass);
 
 if (!$mysql->query('CREATE DATABASE IF NOT EXISTS `' . $mysql->real_escape_string($dbName) . '`')) {
 	fwrite($stderr, "\n" . 'MySQL "CREATE DATABASE" Error: ' . $mysql->error . "\n");
