@@ -239,21 +239,21 @@ EOPHP
 
 function dbconnect($dsn, $user, $pass)
 {
-    $pdo = new PDO($dsn, $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    return $pdo;
+	$pdo = new PDO($dsn, $user, $pass);
+	$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+	return $pdo;
 }
 
 function dbcheck($dsn, $user, $pass, $stderr)
 {
-    try {
-        dbconnect($dsn, $user, $pass);
-        return true;
-    }
-    catch (PDOException $e) {
-				fwrite($stderr, "\n" . 'Database Connection Error: (' . $dsn . '): ' . $e . "\n");
-        return false;
-    }
+	try {
+		dbconnect($dsn, $user, $pass);
+		return true;
+	}
+	catch (PDOException $e) {
+		fwrite($stderr, "\n" . 'Database Connection Error: (' . $dsn . '): ' . $e . "\n");
+		return false;
+	}
 }
 // database might not exist, so let's try creating it (just to be safe)
 
